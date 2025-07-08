@@ -663,13 +663,6 @@ const AdminDashboard: React.FC = () => {
                 <span>Add Testimonial</span>
               </button>
             </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
             {/* Testimonials List */}
             <div className="space-y-4">
@@ -742,4 +735,12 @@ const AdminDashboard: React.FC = () => {
                   <p className="text-gray-500 font-mukta">No testimonials yet. Add your first testimonial above!</p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default AdminDashboard
