@@ -150,11 +150,11 @@ const AdminLogin: React.FC = () => {
                 <strong>Demo Credentials:</strong>
               </p>
               <div className="text-xs text-gray-700 font-mukta space-y-1">
-                <p><strong>Email:</strong> admin@ivoke.com</p>
-                <p><strong>Password:</strong> admin123</p>
+                <p><strong>Email:</strong> Rishabhjain@270804</p>
+                <p><strong>Password:</strong> Rexjain@27</p>
               </div>
               <p className="text-xs text-gray-500 font-mukta mt-2 text-center">
-                Note: You'll need to create this user in your Supabase Auth dashboard
+                Note: Admin user is automatically created via database migration
               </p>
             </div>
           </div>
