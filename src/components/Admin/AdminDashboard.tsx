@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { LogOut, Edit, Plus, Trash2, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { LogOut, Edit, Plus, Trash2, Save, AlertCircle, CheckCircle, Upload, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface HeroContent {
   title: string
@@ -34,6 +34,10 @@ const AdminDashboard: React.FC = () => {
   })
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [newGalleryImage, setNewGalleryImage] = useState({ image_url: '', alt_text: '' })
+  const [newTestimonial, setNewTestimonial] = useState({ name: '', content: '' })
+  const [editingGallery, setEditingGallery] = useState<string | null>(null)
+  const [editingTestimonial, setEditingTestimonial] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -121,6 +125,180 @@ const AdminDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('Error updating hero content:', error)
       setSaveMessage({ type: 'error', text: error.message || 'Failed to update hero content' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const addGalleryImage = async () => {
+    if (!newGalleryImage.image_url.trim() || !newGalleryImage.alt_text.trim()) {
+      setSaveMessage({ type: 'error', text: 'Please fill in all gallery image fields' })
+      return
+    }
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const maxOrder = Math.max(...galleryImages.map(img => img.order_index), 0)
+      
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .insert({
+          image_url: newGalleryImage.image_url.trim(),
+          alt_text: newGalleryImage.alt_text.trim(),
+          order_index: maxOrder + 1
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setGalleryImages([...galleryImages, data])
+      setNewGalleryImage({ image_url: '', alt_text: '' })
+      setSaveMessage({ type: 'success', text: 'Gallery image added successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error adding gallery image:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to add gallery image' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const updateGalleryImage = async (id: string, updates: Partial<GalleryImage>) => {
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('gallery_images')
+        .update(updates)
+        .eq('id', id)
+
+      if (error) throw error
+
+      setGalleryImages(galleryImages.map(img => 
+        img.id === id ? { ...img, ...updates } : img
+      ))
+      setEditingGallery(null)
+      setSaveMessage({ type: 'success', text: 'Gallery image updated successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error updating gallery image:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to update gallery image' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const deleteGalleryImage = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this image?')) return
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setGalleryImages(galleryImages.filter(img => img.id !== id))
+      setSaveMessage({ type: 'success', text: 'Gallery image deleted successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error deleting gallery image:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to delete gallery image' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const addTestimonial = async () => {
+    if (!newTestimonial.name.trim() || !newTestimonial.content.trim()) {
+      setSaveMessage({ type: 'error', text: 'Please fill in all testimonial fields' })
+      return
+    }
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const maxOrder = Math.max(...testimonials.map(t => t.order_index), 0)
+      
+      const { data, error } = await supabase
+        .from('testimonials')
+        .insert({
+          name: newTestimonial.name.trim(),
+          content: newTestimonial.content.trim(),
+          order_index: maxOrder + 1
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setTestimonials([...testimonials, data])
+      setNewTestimonial({ name: '', content: '' })
+      setSaveMessage({ type: 'success', text: 'Testimonial added successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error adding testimonial:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to add testimonial' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const updateTestimonial = async (id: string, updates: Partial<Testimonial>) => {
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('testimonials')
+        .update(updates)
+        .eq('id', id)
+
+      if (error) throw error
+
+      setTestimonials(testimonials.map(t => 
+        t.id === id ? { ...t, ...updates } : t
+      ))
+      setEditingTestimonial(null)
+      setSaveMessage({ type: 'success', text: 'Testimonial updated successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error updating testimonial:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to update testimonial' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const deleteTestimonial = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this testimonial?')) return
+
+    setIsSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('testimonials')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      setTestimonials(testimonials.filter(t => t.id !== id))
+      setSaveMessage({ type: 'success', text: 'Testimonial deleted successfully!' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    } catch (error: any) {
+      console.error('Error deleting testimonial:', error)
+      setSaveMessage({ type: 'error', text: error.message || 'Failed to delete testimonial' })
     } finally {
       setIsSaving(false)
     }
@@ -313,15 +491,126 @@ const AdminDashboard: React.FC = () => {
               <h2 className="text-2xl font-almendra text-gray-900">
                 Manage Gallery
               </h2>
-              <Plus className="text-gray-400" size={24} />
+              <Upload className="text-gray-400" size={24} />
             </div>
-            <div className="text-center py-12">
-              <p className="text-gray-500 font-mukta text-lg">
-                Gallery management functionality will be implemented here.
-              </p>
-              <p className="text-gray-400 font-mukta text-sm mt-2">
-                You'll be able to add, edit, and reorder gallery images.
-              </p>
+            
+            {/* Add New Image Form */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-mukta font-medium text-gray-900 mb-4">Add New Image</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-mukta font-medium text-gray-700 mb-2">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={newGalleryImage.image_url}
+                    onChange={(e) => setNewGalleryImage({...newGalleryImage, image_url: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-mukta"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-mukta font-medium text-gray-700 mb-2">
+                    Alt Text
+                  </label>
+                  <input
+                    type="text"
+                    value={newGalleryImage.alt_text}
+                    onChange={(e) => setNewGalleryImage({...newGalleryImage, alt_text: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-mukta"
+                    placeholder="Description of the image"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={addGalleryImage}
+                disabled={isSaving}
+                className="mt-4 flex items-center space-x-2 bg-pink-600 text-white px-4 py-2 rounded-lg font-mukta hover:bg-pink-700 disabled:opacity-50"
+              >
+                <Plus size={16} />
+                <span>Add Image</span>
+              </button>
+            </div>
+
+            {/* Gallery Images List */}
+            <div className="space-y-4">
+              {galleryImages.map((image) => (
+                <div key={image.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={image.image_url}
+                      alt={image.alt_text}
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      {editingGallery === image.id ? (
+                        <div className="space-y-3">
+                          <input
+                            type="url"
+                            value={image.image_url}
+                            onChange={(e) => setGalleryImages(galleryImages.map(img => 
+                              img.id === image.id ? {...img, image_url: e.target.value} : img
+                            ))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 font-mukta"
+                          />
+                          <input
+                            type="text"
+                            value={image.alt_text}
+                            onChange={(e) => setGalleryImages(galleryImages.map(img => 
+                              img.id === image.id ? {...img, alt_text: e.target.value} : img
+                            ))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 font-mukta"
+                          />
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => updateGalleryImage(image.id, {
+                                image_url: image.image_url,
+                                alt_text: image.alt_text
+                              })}
+                              className="bg-green-600 text-white px-3 py-1 rounded text-sm font-mukta hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingGallery(null)}
+                              className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-mukta hover:bg-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-mukta font-medium text-gray-900">{image.alt_text}</p>
+                          <p className="text-sm text-gray-500 font-mukta truncate">{image.image_url}</p>
+                          <p className="text-xs text-gray-400 font-mukta">Order: {image.order_index}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setEditingGallery(image.id)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteGalleryImage(image.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {galleryImages.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 font-mukta">No gallery images yet. Add your first image above!</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -333,15 +622,47 @@ const AdminDashboard: React.FC = () => {
               <h2 className="text-2xl font-almendra text-gray-900">
                 Manage Testimonials
               </h2>
-              <Plus className="text-gray-400" size={24} />
+              <Edit className="text-gray-400" size={24} />
             </div>
-            <div className="text-center py-12">
-              <p className="text-gray-500 font-mukta text-lg">
-                Testimonials management functionality will be implemented here.
-              </p>
-              <p className="text-gray-400 font-mukta text-sm mt-2">
-                You'll be able to add, edit, and reorder customer testimonials.
-              </p>
+            
+            {/* Add New Testimonial Form */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-mukta font-medium text-gray-900 mb-4">Add New Testimonial</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-mukta font-medium text-gray-700 mb-2">
+                    Customer Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newTestimonial.name}
+                    onChange={(e) => setNewTestimonial({...newTestimonial, name: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-mukta"
+                    placeholder="Customer's full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-mukta font-medium text-gray-700 mb-2">
+                    Testimonial Content
+                  </label>
+                  <textarea
+                    value={newTestimonial.content}
+                    onChange={(e) => setNewTestimonial({...newTestimonial, content: e.target.value})}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 font-mukta"
+                    placeholder="What did the customer say about your brand?"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={addTestimonial}
+                disabled={isSaving}
+                className="mt-4 flex items-center space-x-2 bg-pink-600 text-white px-4 py-2 rounded-lg font-mukta hover:bg-pink-700 disabled:opacity-50"
+              >
+                <Plus size={16} />
+                <span>Add Testimonial</span>
+              </button>
+            </div>
             </div>
           </div>
         )}
@@ -350,4 +671,75 @@ const AdminDashboard: React.FC = () => {
   )
 }
 
+            {/* Testimonials List */}
+            <div className="space-y-4">
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.id} className="border border-gray-200 rounded-lg p-4">
+                  {editingTestimonial === testimonial.id ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={testimonial.name}
+                        onChange={(e) => setTestimonials(testimonials.map(t => 
+                          t.id === testimonial.id ? {...t, name: e.target.value} : t
+                        ))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 font-mukta"
+                      />
+                      <textarea
+                        value={testimonial.content}
+                        onChange={(e) => setTestimonials(testimonials.map(t => 
+                          t.id === testimonial.id ? {...t, content: e.target.value} : t
+                        ))}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 font-mukta"
+                      />
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => updateTestimonial(testimonial.id, {
+                            name: testimonial.name,
+                            content: testimonial.content
+                          })}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-sm font-mukta hover:bg-green-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingTestimonial(null)}
+                          className="bg-gray-600 text-white px-3 py-1 rounded text-sm font-mukta hover:bg-gray-700"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-mukta font-medium text-gray-900 mb-2">{testimonial.name}</h4>
+                        <p className="text-gray-700 font-mukta">{testimonial.content}</p>
+                        <p className="text-xs text-gray-400 font-mukta mt-2">Order: {testimonial.order_index}</p>
+                      </div>
+                      <div className="flex space-x-2 ml-4">
+                        <button
+                          onClick={() => setEditingTestimonial(testimonial.id)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => deleteTestimonial(testimonial.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {testimonials.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 font-mukta">No testimonials yet. Add your first testimonial above!</p>
+                </div>
+              )}
 export default AdminDashboard
